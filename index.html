@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141612">
+  <title>Block Select — Minecraft Library</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --paper: #141612;
+      --ink: #e6e7dc;
+      --muted: #9a9e91;
+      --line: #34382f;
+      --green: #a4b28a;
+      --green-dark: #778467;
+      --lime: #e2bd77;
+      --white: #1c1f1a;
+      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(1440px, 100%); margin: 0 auto; padding: 0 64px; }
+    .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-family: var(--serif); font-size: 21px; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; background: #353d31; color: var(--lime); font: 17px var(--sans); }
+    .top-note { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12px; }
+    .online-dot { width: 7px; height: 7px; border-radius: 50%; background: #a4b28a; }
+    .hero { position: relative; min-height: 296px; padding: 57px 0 43px; overflow: hidden; border-bottom: 1px solid var(--line); }
+    .hero::after { content: ""; position: absolute; z-index: -1; width: 330px; height: 330px; top: -70px; right: 48px; border: 1px solid #a4b28a19; transform: rotate(45deg); background: repeating-linear-gradient(0deg, transparent 0 30px, #a4b28a08 31px 32px), repeating-linear-gradient(90deg, transparent 0 30px, #a4b28a08 31px 32px); }
+    .eyebrow { margin: 0 0 13px; color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { margin: 0; font: 400 clamp(44px, 6vw, 76px)/.99 var(--serif); letter-spacing: -.045em; }
+    .hero-foot { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-top: 24px; }
+    .hero-copy { max-width: 400px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+    .library-count { color: var(--green); font: 16px var(--serif); white-space: nowrap; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 23px 0 17px; }
+    .filters { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter { flex: 0 0 auto; border: 1px solid transparent; border-radius: 2px; padding: 9px 13px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; transition: background .18s, color .18s, border-color .18s; }
+    .filter:hover { color: var(--ink); }
+    .filter[aria-pressed="true"] { border-color: #515747; background: #242820; color: var(--ink); }
+    .tools { display: flex; align-items: center; gap: 9px; }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; top: 50%; left: 12px; width: 15px; height: 15px; color: var(--muted); transform: translateY(-50%); pointer-events: none; }
+    .search { width: 210px; height: 38px; border: 1px solid var(--line); border-radius: 2px; padding: 0 12px 0 36px; outline: none; background: var(--white); color: var(--ink); font-size: 12px; }
+    .search:focus { border-color: var(--green); box-shadow: 0 0 0 2px #a4b28a19; }
+    .scan-btn { height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #758467; border-radius: 2px; padding: 0 13px; background: #353d31; color: #eff0e7; font-size: 12px; cursor: pointer; transition: background .18s; white-space: nowrap; }
+    .scan-btn:hover { background: #48523f; }
+    .scan-btn:disabled { cursor: wait; opacity: .7; transform: none; }
+    .scan-btn svg { width: 15px; height: 15px; }
+    .status { min-height: 19px; margin: -7px 0 12px; color: var(--muted); font-size: 11px; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; padding: 0 0 54px; }
+    .game-card { --tile: #30352c; min-height: 220px; position: relative; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); background: var(--white); transition: border-color .18s; }
+    .game-card:hover { border-color: #657056; }
+    .card-art { height: 112px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: var(--tile); background-image: linear-gradient(90deg, #ffffff06 1px, transparent 1px), linear-gradient(#ffffff06 1px, transparent 1px); background-size: 24px 24px; }
+    .card-art::after { content: ""; position: absolute; right: 18px; bottom: 18px; width: 24px; height: 24px; border: 1px solid #e6e7dc24; }
+    .art-number { position: relative; z-index: 1; color: #e5e5d7; font: 52px/.9 var(--serif); letter-spacing: -.06em; }
+    .art-stamp { position: absolute; top: 11px; right: 11px; z-index: 1; padding: 5px 7px; border: 1px solid #ffffff28; background: #14161299; color: #d2d4c8; font-size: 9px; }
+    .card-body { flex: 1; display: flex; flex-direction: column; padding: 13px 14px 12px; }
+    .card-kicker { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 9px; text-transform: uppercase; }
+    .card-title { overflow: hidden; margin: 0; font: 17px/1.2 var(--serif); text-overflow: ellipsis; white-space: nowrap; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; }
+    .offline-label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
+    .offline-label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #a4b28a; }
+    .play-btn { min-width: 68px; height: 29px; border: 1px solid var(--line); border-radius: 2px; background: transparent; color: var(--ink); font-size: 10px; cursor: pointer; transition: color .18s, border-color .18s, background .18s; }
+    .play-btn:hover { border-color: #758467; background: #353d31; color: var(--ink); }
+    .empty { grid-column: 1 / -1; padding: 62px 20px; border: 1px dashed var(--line); color: var(--muted); text-align: center; font: 18px var(--serif); }
+    .footer { display: flex; justify-content: space-between; gap: 20px; padding: 19px 0 26px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .viewer { position: fixed; inset: 0; z-index: 10; display: none; grid-template-rows: 52px 1fr; background: #10120f; }
+    .viewer.open { display: grid; animation: fade-in .18s both; }
+    .viewer-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 17px; background: #1b1e19; color: var(--ink); }
+    .viewer-name { overflow: hidden; font: 15px var(--serif); text-overflow: ellipsis; white-space: nowrap; }
+    .viewer-actions { display: flex; gap: 7px; }
+    .viewer-action { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #ffffff35; border-radius: 2px; background: transparent; color: white; cursor: pointer; }
+    .viewer-action:hover { background: #ffffff19; }
+    .viewer-action svg { width: 16px; height: 16px; }
+    .viewer iframe { width: 100%; height: 100%; border: 0; background: #000; }
+    @keyframes appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @media (max-width: 1050px) { .shell { padding: 0 38px; } .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hero::after { right: -90px; } }
+    @media (max-width: 720px) { .shell { padding: 0 21px; } .topbar { height: 66px; } .hero { min-height: 262px; padding: 49px 0 32px; } .hero::after { top: -115px; right: -210px; } .hero-foot { align-items: start; flex-direction: column; gap: 12px; margin-top: 17px; } .toolbar { align-items: stretch; flex-direction: column-reverse; gap: 13px; } .tools { display: grid; grid-template-columns: 1fr auto; } .search { width: 100%; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; } .game-card { min-height: 197px; } .card-art { height: 96px; } .card-body { padding: 11px 10px 10px; } .card-title { font-size: 15px; } .footer { flex-direction: column; gap: 6px; } }
+    @media (max-width: 380px) { .shell { padding: 0 14px; } .grid { grid-template-columns: 1fr; } .game-card { min-height: 205px; } .card-art { height: 105px; } .top-note { font-size: 10px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Block Select home"><span class="brand-mark" aria-hidden="true">▦</span><span>block select</span></a>
+      <div class="top-note"><span class="online-dot" aria-hidden="true"></span><span>YOUR LOCAL GAME LIBRARY</span></div>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">A little world, all in one place</p>
+        <h1 id="page-title">Pick your<br>next world.</h1>
+        <div class="hero-foot"><p class="hero-copy">Classic builds, favorite clients, and old worlds worth another visit. Choose a version and jump straight in.</p><div class="library-count" id="library-count" aria-live="polite"></div></div>
+      </section>
+      <section aria-label="Game library">
+        <div class="toolbar">
+          <nav class="filters" aria-label="Filter games" id="filters">
+            <button class="filter" type="button" data-filter="all" aria-pressed="true">Everything</button>
+            <button class="filter" type="button" data-filter="classic" aria-pressed="false">Classic</button>
+            <button class="filter" type="button" data-filter="1.8" aria-pressed="false">Other versions</button>
+            <button class="filter" type="button" data-filter="clients" aria-pressed="false">Clients</button>
+          </nav>
+          <div class="tools">
+            <label class="search-wrap"><svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg><input class="search" id="search" type="search" placeholder="Find a world..." aria-label="Search games"></label>
+            <button class="scan-btn" id="scan" type="button" title="Choose the folder containing your game HTML files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 7.5h7l2 2H21v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"></path><path d="M12 12v5m-2-2 2 2 2-2"></path></svg><span>Scan folder</span></button>
+          </div>
+        </div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="grid" id="grid"></div>
+      </section>
+    </main>
+    <footer class="footer"><span>BLOCK SELECT&nbsp; / &nbsp;A LIBRARY FOR LITTLE WORLDS</span><span>Games run locally in your browser.</span></footer>
+  </div>
+
+  <section class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Minecraft game">
+    <div class="viewer-bar"><span class="viewer-name" id="viewer-name"></span><div class="viewer-actions">
+      <button class="viewer-action" id="new-tab" type="button" title="Open game in a new tab" aria-label="Open game in a new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M14 4h6v6m0-6-9 9"></path><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path></svg></button>
+      <button class="viewer-action" id="fullscreen" type="button" title="Enter fullscreen" aria-label="Enter fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"></path></svg></button>
+      <button class="viewer-action" id="close" type="button" title="Close game (Esc)" aria-label="Close game"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
+    </div></div>
+    <iframe id="game-frame" title="Minecraft game" allow="fullscreen; autoplay; gamepad; pointer-lock; clipboard-read; clipboard-write" allowfullscreen></iframe>
+  </section>
+  <script>
+    (() => {
+      const starterFiles = [
+        "DragonX_V4.html", "DragonXShadow.html", "EaglerReborn.html",
+        "EaglercraftX_1_8_u23_Offline_Signed.html", "Minecraft 1.0.3.html",
+        "Minecraft 1.5.2.html", "OddFutureClient.html", "PiClient.html",
+        "PrecisionClient (1).html", "ShadowClient30Beta.html", "eagler1.5.html",
+        "eaglercraft.1.8.8.html", "fuchsiax.html", "kerosene.html", "nitclient.html",
+        "1.11.2.html", "1.12.2.html", "1.20.6.html", "1.5.2.html", "1.9.4.html",
+        "26.2.html", "alpha1.2.6.html", "beta1.3.html"
+      ];
+      const palette = ["#343c32", "#443a2d", "#303b3b", "#3c3431", "#303641", "#414033", "#34413a", "#42383d"];
+      const grid = document.querySelector("#grid");
+      const search = document.querySelector("#search");
+      const status = document.querySelector("#status");
+      const scanButton = document.querySelector("#scan");
+      const viewer = document.querySelector("#viewer");
+      const frame = document.querySelector("#game-frame");
+      const indexedDbName = "block-select-library";
+      let games = starterFiles.map((file) => ({ file, source: "starter" }));
+      let activeFilter = "all";
+      let currentGame = null;
+      let folderHandle = null;
+      frame.addEventListener("load", injectGameEnhancements);
+
+      function titleFromFile(file) {
+        return file.replace(/\.html?$/i, "").replace(/\s*\(\d+\)$/, "").replace(/[_.-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (letter) => letter.toUpperCase());
+      }
+
+      function categoryFor(file) {
+        const name = file.toLowerCase();
+        if (/^(?:alpha|beta)/.test(name) || /^1\.[0-5](?:\.|$)/.test(name)
+          || /minecraft 1\.[05]|eagler1\.5|precisionclient/.test(name)) return "classic";
+        if (/client|shadow|dragon|reborn|fuchsia|kerosene|nitclient|eaglercraftx|eaglercraft\.1\.8/.test(name)) return "clients";
+        return "1.8";
+      }
+
+      function versionFor(file) {
+        const name = file.toLowerCase();
+        const version = name.match(/(?:minecraft[ ._-]*|eagler[ ._-]*|1[._ -])?(1\.[0-9]+(?:\.[0-9]+)?)/)
+          || name.match(/\b(\d{1,2}\.\d+(?:\.\d+)?)\b/);
+        if (version) return version[1].replaceAll("_", ".");
+        if (/1[._ -]?8/.test(name)) return "1.8";
+        if (/client|shadow|dragon|reborn|fuchsia|kerosene|nitclient/.test(name)) return "Client build";
+        return "Minecraft";
+      }
+
+      function injectGameEnhancements() {
+        try {
+          const gameDocument = frame.contentDocument;
+          const gameWindow = frame.contentWindow;
+          if (!gameDocument?.body || gameDocument.documentElement.dataset.blockSelectEnhanced) return;
+          gameDocument.documentElement.dataset.blockSelectEnhanced = "true";
+
+          let simulatedLock = null;
+          const documentPrototype = Object.getPrototypeOf(gameDocument);
+          const lockDescriptor = Object.getOwnPropertyDescriptor(gameDocument, "pointerLockElement")
+            || Object.getOwnPropertyDescriptor(documentPrototype, "pointerLockElement")
+            || Object.getOwnPropertyDescriptor(gameWindow.Document.prototype, "pointerLockElement");
+          const nativeLockElement = () => lockDescriptor?.get?.call(gameDocument) || null;
+          const clearSimulatedLock = () => {
+            simulatedLock = null;
+            gameDocument.documentElement.classList.remove("bs-pointer-locked");
+          };
+          const simulateLock = (element) => {
+            simulatedLock = element;
+            gameDocument.documentElement.classList.add("bs-pointer-locked");
+            gameDocument.dispatchEvent(new gameWindow.Event("pointerlockchange"));
+            return Promise.resolve();
+          };
+          const lockStyle = gameDocument.createElement("style");
+          lockStyle.textContent = "html.bs-pointer-locked, html.bs-pointer-locked * { cursor: none !important; }";
+          gameDocument.head.append(lockStyle);
+          gameDocument.addEventListener("pointerlockchange", () => {
+            if (nativeLockElement()) clearSimulatedLock();
+          });
+
+          try {
+            Object.defineProperty(gameDocument, "pointerLockElement", {
+              configurable: true,
+              get: () => nativeLockElement() || simulatedLock
+            });
+            const elementPrototype = gameWindow.Element.prototype;
+            const nativeRequest = elementPrototype.requestPointerLock;
+            elementPrototype.requestPointerLock = function (...args) {
+              if (!nativeRequest) return simulateLock(this);
+              try {
+                const result = nativeRequest.apply(this, args);
+                if (result && typeof result.then === "function") {
+                  return result.then(() => {
+                    if (nativeLockElement()) clearSimulatedLock();
+                    else simulateLock(this);
+                  }, () => simulateLock(this));
+                }
+                return result;
+              } catch {
+                return simulateLock(this);
+              }
+            };
+            const nativeExit = gameDocument.exitPointerLock;
+            gameDocument.exitPointerLock = function () {
+              if (simulatedLock) {
+                clearSimulatedLock();
+                gameDocument.dispatchEvent(new gameWindow.Event("pointerlockchange"));
+              }
+              try { return nativeExit?.call(gameDocument); } catch { return undefined; }
+            };
+          } catch { /* Some browsers make pointer-lock APIs non-configurable. */ }
+
+          let lastMouseX = null;
+          let lastMouseY = null;
+          gameDocument.addEventListener("mousemove", (event) => {
+            if (!simulatedLock || event.__blockSelectSynthetic) return;
+            const deltaX = event.movementX || (lastMouseX === null ? 0 : event.clientX - lastMouseX);
+            const deltaY = event.movementY || (lastMouseY === null ? 0 : event.clientY - lastMouseY);
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+            if (!deltaX && !deltaY) return;
+            const synthetic = new gameWindow.MouseEvent("mousemove", {
+              bubbles: true, cancelable: true, clientX: event.clientX, clientY: event.clientY
+            });
+            Object.defineProperties(synthetic, {
+              movementX: { value: deltaX }, movementY: { value: deltaY },
+              __blockSelectSynthetic: { value: true }
+            });
+            event.target.dispatchEvent(synthetic);
+          }, true);
+
+          const mobile = gameWindow.matchMedia("(pointer: coarse)").matches
+            || gameWindow.navigator.maxTouchPoints > 0
+            || /Android|iPhone|iPad|iPod|Mobile/i.test(gameWindow.navigator.userAgent);
+          if (!mobile) return;
+
+          let viewport = gameDocument.querySelector('meta[name="viewport"]');
+          if (!viewport) {
+            viewport = gameDocument.createElement("meta");
+            viewport.name = "viewport";
+            gameDocument.head.append(viewport);
+          }
+          viewport.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+
+          const style = gameDocument.createElement("style");
+          style.textContent = `
+            #bs-look-zone, #bs-mobile-controls { position: fixed; z-index: 2147483000; touch-action: none; -webkit-user-select: none; user-select: none; }
+            #bs-look-zone { inset: 0 0 0 38%; background: transparent; }
+            #bs-mobile-controls { inset: 0; z-index: 2147483001; pointer-events: none; font: 600 11px/1 system-ui, sans-serif; color: #f0f0e8; }
+            .bs-pad { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + clamp(28px, 6vh, 48px)); width: 144px; height: 144px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); gap: 4px; }
+            .bs-button { display: grid; place-items: center; border: 1px solid #e0e2d270; border-radius: 8px; background: #20231edb; color: #f0f0e8; box-shadow: 0 2px 7px #0006; font: 600 20px/1 system-ui, sans-serif; touch-action: none; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+            .bs-button:active { border-color: #d6bd83; background: #48503feF; }
+            .bs-up { grid-area: 1 / 2; } .bs-left { grid-area: 2 / 1; } .bs-down { grid-area: 2 / 2; } .bs-right { grid-area: 2 / 3; }
+            .bs-actions { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + clamp(28px, 6vh, 48px)); display: grid; grid-template-columns: repeat(2, 58px); gap: 8px; align-items: end; }
+            .bs-action { min-height: 52px; border-radius: 10px; font-size: 10px; letter-spacing: 0; text-align: center; }
+            .bs-jump { min-height: 62px; border-color: #d0bd89; background: #514b36ed; }
+            .bs-hint { position: absolute; right: max(16px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); padding: 8px 10px; border: 1px solid #ffffff35; border-radius: 2px; background: #20231edb; color: #d6d8ce; font: 10px/1 system-ui, sans-serif; }
+            .bs-topbar { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); display: flex; gap: 5px; pointer-events: none; }
+            .bs-tool { min-width: 54px; min-height: 34px; padding: 0 9px; border: 1px solid #ffffff45; border-radius: 5px; background: #20231ee8; color: #f0f0e8; font: 600 10px/1 system-ui, sans-serif; touch-action: manipulation; pointer-events: auto; }
+            .bs-tool:active, .bs-tool[aria-pressed="true"] { border-color: #d0bd89; background: #514b36f2; }
+            .bs-editor { position: absolute; top: calc(max(52px, env(safe-area-inset-top) + 42px)); left: max(10px, env(safe-area-inset-left)); width: min(330px, calc(100vw - 20px)); display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 11px; border: 1px solid #ffffff35; border-radius: 6px; background: #1c1f1af5; color: #e6e7dc; box-shadow: 0 5px 18px #0008; font: 11px/1.3 system-ui, sans-serif; pointer-events: auto; }
+            .bs-editor[hidden] { display: none; }
+            .bs-editor label { min-width: 0; display: grid; gap: 5px; color: #b9bdaf; }
+            .bs-editor select, .bs-editor input[type="range"], .bs-editor input[type="color"], .bs-editor input[type="file"], .bs-editor button { width: 100%; min-height: 30px; border: 1px solid #ffffff32; border-radius: 4px; padding: 4px 7px; background: #292d26; color: #f0f0e8; font: 11px system-ui, sans-serif; }
+            .bs-editor input[type="color"] { padding: 2px; }
+            .bs-editor input[type="file"] { padding: 5px; }
+            .bs-editor input[type="range"] { padding: 0; accent-color: #cdb678; }
+            .bs-editor .bs-editor-wide { grid-column: 1 / -1; }
+            .bs-editor .bs-editor-actions { display: flex; gap: 7px; }
+            .bs-editor .bs-editor-actions button { flex: 1; }
+            .bs-editor button:active { border-color: #d0bd89; }
+            .bs-button.bs-positioned { position: absolute; z-index: 2; }
+            .bs-button.bs-editing { outline: 2px dashed #e1c67e; outline-offset: 2px; }
+            @media (orientation: landscape) { .bs-pad { width: 130px; height: 130px; } .bs-actions { grid-template-columns: repeat(3, 54px); } .bs-action { min-height: 48px; } .bs-jump { min-height: 56px; } }
+          `;
+          gameDocument.head.append(style);
+
+          const lookZone = gameDocument.createElement("div");
+          lookZone.id = "bs-look-zone";
+          lookZone.setAttribute("aria-label", "Touch and drag to look around; tap to interact");
+          gameDocument.body.append(lookZone);
+          const controls = gameDocument.createElement("div");
+          controls.id = "bs-mobile-controls";
+          controls.innerHTML = '<div class="bs-hint">DRAG TO LOOK</div><div class="bs-topbar"><button class="bs-tool" type="button" data-key="Escape">Menu</button><button class="bs-tool" type="button" data-key="KeyT">Chat</button><button class="bs-tool" type="button" data-key="F5">View</button><button class="bs-tool bs-layout-toggle" type="button" aria-expanded="false">Layout</button></div><div class="bs-editor" hidden><label>Button<select class="bs-target"></select></label><label>Size <input class="bs-size" type="range" min="36" max="92" step="2" value="56"></label><label>Color<input class="bs-color" type="color" value="#292d26"></label><label>Picture<input class="bs-picture" type="file" accept="image/*"></label><div class="bs-editor-actions bs-editor-wide"><button class="bs-clear-picture" type="button">Clear picture</button><button class="bs-reset" type="button">Reset layout</button><button class="bs-done" type="button">Done</button></div><p class="bs-editor-wide bs-editor-status" aria-live="polite" style="margin:0;color:#b9bdaf">Drag a control to place it.</p></div><div class="bs-pad"></div><div class="bs-actions"></div>';
+          gameDocument.body.append(controls);
+
+          const keyCodes = { KeyW: 87, KeyA: 65, KeyS: 83, KeyD: 68, Space: 32, ShiftLeft: 16, KeyE: 69, KeyT: 84, Escape: 27, F5: 116 };
+          const heldKeys = new Set();
+          const heldMouseButtons = new Set();
+          const pointerKeys = new Map();
+          const editor = controls.querySelector(".bs-editor");
+          const editorToggle = controls.querySelector(".bs-layout-toggle");
+          const targetSelect = controls.querySelector(".bs-target");
+          const sizeInput = controls.querySelector(".bs-size");
+          const colorInput = controls.querySelector(".bs-color");
+          const pictureInput = controls.querySelector(".bs-picture");
+          const editorStatus = controls.querySelector(".bs-editor-status");
+          const buttonLabels = new Map();
+          const controlButtons = new Map();
+          const storageKey = `block-select-controls:${currentGame?.file || "game"}`;
+          let editMode = false;
+          let buttonLayout = {};
+          try { buttonLayout = JSON.parse(gameWindow.localStorage.getItem(storageKey) || "{}"); }
+          catch { buttonLayout = {}; }
+
+          function saveLayout() {
+            try { gameWindow.localStorage.setItem(storageKey, JSON.stringify(buttonLayout)); }
+            catch { editorStatus.textContent = "Could not save this layout in browser storage."; }
+          }
+
+          function layoutEntry(id) {
+            if (!buttonLayout[id]) buttonLayout[id] = {};
+            return buttonLayout[id];
+          }
+
+          function applyButtonLayout(button, id) {
+            const entry = buttonLayout[id];
+            if (!entry) return;
+            if (entry.size) {
+              button.style.width = `${entry.size}px`;
+              button.style.height = `${entry.size}px`;
+            }
+            if (entry.color) button.style.backgroundColor = entry.color;
+            if (entry.image) {
+              button.style.backgroundImage = `linear-gradient(#10120f55, #10120f55), url("${entry.image}")`;
+              button.style.backgroundPosition = "center";
+              button.style.backgroundSize = "cover";
+              button.style.textShadow = "0 1px 3px #000, 0 1px 7px #000";
+            }
+            if (Number.isFinite(entry.x) && Number.isFinite(entry.y)) {
+              button.classList.add("bs-positioned");
+              button.style.left = `${entry.x * Math.max(0, controls.clientWidth - button.offsetWidth)}px`;
+              button.style.top = `${entry.y * Math.max(0, controls.clientHeight - button.offsetHeight)}px`;
+            }
+          }
+
+          function selectControl(id) {
+            targetSelect.value = id;
+            const entry = buttonLayout[id] || {};
+            const button = controlButtons.get(id);
+            sizeInput.value = String(entry.size || Math.round(button?.getBoundingClientRect().width || 56));
+            colorInput.value = entry.color || "#292d26";
+          }
+
+          function registerControl(button, id, label) {
+            button.dataset.control = id;
+            buttonLabels.set(id, label);
+            controlButtons.set(id, button);
+            const option = gameDocument.createElement("option");
+            option.value = id;
+            option.textContent = label;
+            targetSelect.append(option);
+            applyButtonLayout(button, id);
+
+            let dragging = null;
+            button.addEventListener("pointerdown", (event) => {
+              if (!editMode || event.pointerType === "mouse" && event.button !== 0) return;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              selectControl(id);
+              const containerRect = controls.getBoundingClientRect();
+              const buttonRect = button.getBoundingClientRect();
+              if (!button.classList.contains("bs-positioned")) {
+                button.classList.add("bs-positioned");
+                button.style.left = `${buttonRect.left - containerRect.left}px`;
+                button.style.top = `${buttonRect.top - containerRect.top}px`;
+              }
+              button.setPointerCapture(event.pointerId);
+              dragging = { pointerId: event.pointerId, offsetX: event.clientX - buttonRect.left, offsetY: event.clientY - buttonRect.top };
+            }, true);
+            button.addEventListener("pointermove", (event) => {
+              if (!dragging || dragging.pointerId !== event.pointerId) return;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              const rect = controls.getBoundingClientRect();
+              const maxX = Math.max(0, rect.width - button.offsetWidth);
+              const maxY = Math.max(0, rect.height - button.offsetHeight);
+              const left = Math.max(0, Math.min(maxX, event.clientX - rect.left - dragging.offsetX));
+              const top = Math.max(0, Math.min(maxY, event.clientY - rect.top - dragging.offsetY));
+              button.style.left = `${left}px`;
+              button.style.top = `${top}px`;
+            }, true);
+            const endDrag = (event) => {
+              if (!dragging || dragging.pointerId !== event.pointerId) return;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              const entry = layoutEntry(id);
+              const maxX = Math.max(1, controls.clientWidth - button.offsetWidth);
+              const maxY = Math.max(1, controls.clientHeight - button.offsetHeight);
+              entry.x = Math.max(0, Math.min(1, parseFloat(button.style.left) / maxX));
+              entry.y = Math.max(0, Math.min(1, parseFloat(button.style.top) / maxY));
+              saveLayout();
+              dragging = null;
+            };
+            button.addEventListener("pointerup", endDrag, true);
+            button.addEventListener("pointercancel", endDrag, true);
+            button.addEventListener("lostpointercapture", endDrag, true);
+          }
+
+          function setEditMode(enabled) {
+            editMode = enabled;
+            editorToggle.setAttribute("aria-pressed", String(enabled));
+            editorToggle.textContent = enabled ? "Editing" : "Layout";
+            controlButtons.forEach((button) => button.classList.toggle("bs-editing", enabled));
+            editorStatus.textContent = enabled ? "Drag any control to move it. Changes save automatically." : "Layout saved on this device.";
+          }
+
+          controls.querySelectorAll(".bs-tool[data-key]").forEach((button) => {
+            button.addEventListener("click", () => {
+              if (editMode) return;
+              const code = button.dataset.key;
+              sendKey(code, true);
+              gameWindow.setTimeout(() => sendKey(code, false), 40);
+            });
+          });
+          editorToggle.addEventListener("click", () => {
+            const isOpen = editor.hidden;
+            editor.hidden = !isOpen;
+            editorToggle.setAttribute("aria-expanded", String(isOpen));
+            setEditMode(isOpen);
+          });
+          controls.querySelector(".bs-done").addEventListener("click", () => {
+            editor.hidden = true;
+            editorToggle.setAttribute("aria-expanded", "false");
+            setEditMode(false);
+          });
+          targetSelect.addEventListener("change", () => selectControl(targetSelect.value));
+          sizeInput.addEventListener("input", () => {
+            const id = targetSelect.value;
+            const button = controlButtons.get(id);
+            if (!button) return;
+            const rect = button.getBoundingClientRect();
+            if (!button.classList.contains("bs-positioned")) {
+              const controlsRect = controls.getBoundingClientRect();
+              button.classList.add("bs-positioned");
+              button.style.left = `${rect.left - controlsRect.left}px`;
+              button.style.top = `${rect.top - controlsRect.top}px`;
+            }
+            const size = Number(sizeInput.value);
+            button.style.width = `${size}px`;
+            button.style.height = `${size}px`;
+            layoutEntry(id).size = size;
+          });
+          sizeInput.addEventListener("change", saveLayout);
+          colorInput.addEventListener("input", () => {
+            const id = targetSelect.value;
+            const button = controlButtons.get(id);
+            if (!button) return;
+            button.style.backgroundColor = colorInput.value;
+            layoutEntry(id).color = colorInput.value;
+          });
+          colorInput.addEventListener("change", saveLayout);
+          pictureInput.addEventListener("change", async () => {
+            const file = pictureInput.files?.[0];
+            if (!file) return;
+            try {
+              const bitmap = await gameWindow.createImageBitmap(file);
+              const scale = Math.min(1, 256 / Math.max(bitmap.width, bitmap.height));
+              const canvas = gameDocument.createElement("canvas");
+              canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+              canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+              canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+              bitmap.close();
+              const image = canvas.toDataURL("image/webp", 0.78);
+              const id = targetSelect.value;
+              const button = controlButtons.get(id);
+              if (button) {
+                button.style.backgroundImage = `linear-gradient(#10120f55, #10120f55), url("${image}")`;
+                button.style.backgroundPosition = "center";
+                button.style.backgroundSize = "cover";
+                button.style.textShadow = "0 1px 3px #000, 0 1px 7px #000";
+                layoutEntry(id).image = image;
+                saveLayout();
+                editorStatus.textContent = "Picture applied and resized for mobile.";
+              }
+            } catch {
+              editorStatus.textContent = "Could not load that picture. Try another image.";
+            }
+          });
+          controls.querySelector(".bs-clear-picture").addEventListener("click", () => {
+            const id = targetSelect.value;
+            const button = controlButtons.get(id);
+            if (!button) return;
+            button.style.backgroundImage = "";
+            button.style.backgroundPosition = "";
+            button.style.backgroundSize = "";
+            button.style.textShadow = "";
+            delete layoutEntry(id).image;
+            saveLayout();
+            editorStatus.textContent = "Picture removed.";
+          });
+          controls.querySelector(".bs-reset").addEventListener("click", () => {
+            const id = targetSelect.value;
+            const button = controlButtons.get(id);
+            if (!button) return;
+            delete buttonLayout[id];
+            button.classList.remove("bs-positioned");
+            button.style.cssText = "";
+            button.classList.toggle("bs-editing", editMode);
+            applyButtonLayout(button, id);
+            selectControl(id);
+            saveLayout();
+            editorStatus.textContent = `${buttonLabels.get(id)} reset.`;
+          });
+
+          controls.querySelectorAll(".bs-tool[data-key]").forEach((button) => {
+            registerControl(button, `tool-${button.dataset.key.toLowerCase()}`, button.textContent);
+          });
+
+          const mouseButtonsMask = () => [...heldMouseButtons].reduce((mask, button) => mask | (1 << button), 0);
+          function sendKey(code, pressed) {
+            if (pressed === heldKeys.has(code)) return;
+            if (pressed) heldKeys.add(code);
+            else heldKeys.delete(code);
+            const key = ({ Space: " ", ShiftLeft: "Shift", Escape: "Escape", F5: "F5", KeyT: "t" })[code] || code.slice(-1).toLowerCase();
+            gameDocument.dispatchEvent(new gameWindow.KeyboardEvent(pressed ? "keydown" : "keyup", {
+              key, code, keyCode: keyCodes[code], which: keyCodes[code], bubbles: true, cancelable: true
+            }));
+          }
+          function sendMouse(type, x, y, button = 0) {
+            if (type === "mousedown") heldMouseButtons.add(button);
+            if (type === "mouseup") heldMouseButtons.delete(button);
+            const canvas = gameDocument.querySelector("canvas") || gameDocument.body;
+            canvas.dispatchEvent(new gameWindow.MouseEvent(type, {
+              view: gameWindow, bubbles: true, cancelable: true,
+              clientX: x, clientY: y, button, buttons: mouseButtonsMask()
+            }));
+          }
+          function sendLook(x, y, deltaX, deltaY) {
+            const canvas = gameDocument.querySelector("canvas") || gameDocument.body;
+            const movement = new gameWindow.MouseEvent("mousemove", {
+              view: gameWindow, bubbles: true, cancelable: true, clientX: x, clientY: y
+            });
+            Object.defineProperties(movement, {
+              movementX: { value: deltaX }, movementY: { value: deltaY },
+              __blockSelectSynthetic: { value: true }
+            });
+            canvas.dispatchEvent(movement);
+          }
+
+          const pad = controls.querySelector(".bs-pad");
+          [["up", "KeyW", "▲"], ["left", "KeyA", "◀"], ["down", "KeyS", "▼"], ["right", "KeyD", "▶"]].forEach(([direction, code, glyph]) => {
+            const button = gameDocument.createElement("button");
+            button.type = "button";
+            button.className = `bs-button bs-${direction}`;
+            button.textContent = glyph;
+            button.setAttribute("aria-label", direction);
+            button.addEventListener("pointerdown", (event) => {
+              event.preventDefault(); event.stopPropagation();
+              pointerKeys.set(event.pointerId, code);
+              button.setPointerCapture(event.pointerId);
+              sendKey(code, true);
+            });
+            const release = (event) => {
+              const held = pointerKeys.get(event.pointerId);
+              if (!held) return;
+              pointerKeys.delete(event.pointerId);
+              sendKey(held, false);
+              event.preventDefault(); event.stopPropagation();
+            };
+            button.addEventListener("pointerup", release);
+            button.addEventListener("pointercancel", release);
+            button.addEventListener("lostpointercapture", release);
+            pad.append(button);
+          });
+
+          const actions = controls.querySelector(".bs-actions");
+          const actionButtons = [
+            { label: "Mine", mouse: 0 }, { label: "Place", mouse: 2 },
+            { label: "Jump", key: "Space", className: "bs-jump" },
+            { label: "Bag", key: "KeyE" }, { label: "Sneak", key: "ShiftLeft" }
+          ];
+          actionButtons.forEach((action) => {
+            const button = gameDocument.createElement("button");
+            button.type = "button";
+            button.className = `bs-button bs-action ${action.className || ""}`;
+            button.textContent = action.label;
+            button.setAttribute("aria-label", action.label);
+            let pointerId = null;
+            button.addEventListener("pointerdown", (event) => {
+              event.preventDefault(); event.stopPropagation();
+              pointerId = event.pointerId;
+              button.setPointerCapture(pointerId);
+              if (action.key) sendKey(action.key, true);
+              else sendMouse("mousedown", event.clientX, event.clientY, action.mouse);
+            });
+            const release = (event) => {
+              if (pointerId !== event.pointerId) return;
+              pointerId = null;
+              if (action.key) sendKey(action.key, false);
+              else sendMouse("mouseup", event.clientX, event.clientY, action.mouse);
+              event.preventDefault(); event.stopPropagation();
+            };
+            button.addEventListener("pointerup", release);
+            button.addEventListener("pointercancel", release);
+            button.addEventListener("lostpointercapture", release);
+            actions.append(button);
+          });
+
+          let lookPointer = null;
+          let lookX = 0;
+          let lookY = 0;
+          let lookStartX = 0;
+          let lookStartY = 0;
+          lookZone.addEventListener("pointerdown", (event) => {
+            if (event.pointerType === "mouse") return;
+            event.preventDefault();
+            lookPointer = event.pointerId;
+            lookX = event.clientX;
+            lookY = event.clientY;
+            lookStartX = event.clientX;
+            lookStartY = event.clientY;
+            lookZone.setPointerCapture(event.pointerId);
+          });
+          lookZone.addEventListener("pointermove", (event) => {
+            if (event.pointerId !== lookPointer) return;
+            event.preventDefault();
+            const deltaX = event.clientX - lookX;
+            const deltaY = event.clientY - lookY;
+            lookX = event.clientX;
+            lookY = event.clientY;
+            sendLook(lookX, lookY, deltaX, deltaY);
+          });
+          const endLook = (event) => {
+            if (event.pointerId !== lookPointer) return;
+            if (Math.hypot(event.clientX - lookStartX, event.clientY - lookStartY) < 10) {
+              sendMouse("mousedown", event.clientX, event.clientY, 0);
+              sendMouse("mouseup", event.clientX, event.clientY, 0);
+              sendMouse("click", event.clientX, event.clientY, 0);
+            }
+            lookPointer = null;
+          };
+          lookZone.addEventListener("pointerup", endLook);
+          lookZone.addEventListener("pointercancel", endLook);
+
+          gameWindow.addEventListener("blur", () => {
+            [...heldKeys].forEach((code) => sendKey(code, false));
+            [...heldMouseButtons].forEach((button) => sendMouse("mouseup", lookX, lookY, button));
+          });
+        } catch {
+          status.textContent = "Game controls could not be added. Open the launcher and game from the same site.";
+        }
+      }
+
+      function render() {
+        const query = search.value.trim().toLowerCase();
+        const visible = games.filter((game) => {
+          const title = titleFromFile(game.file).toLowerCase();
+          const matchesFilter = activeFilter === "all" || categoryFor(game.file) === activeFilter;
+          return matchesFilter && (!query || title.includes(query) || versionFor(game.file).toLowerCase().includes(query));
+        });
+        document.querySelector("#library-count").textContent = `${games.length} ${games.length === 1 ? "world" : "worlds"} in your library`;
+        grid.replaceChildren();
+        if (!visible.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = games.length ? "No worlds match that search." : "No game files found. Choose the folder that holds your .html games.";
+          grid.append(empty);
+          return;
+        }
+        visible.forEach((game, index) => {
+          const title = titleFromFile(game.file);
+          const category = categoryFor(game.file);
+          const categoryLabel = category === "classic" ? "Classic" : category === "clients" ? "Client edition" : "Minecraft";
+          const card = document.createElement("article");
+          card.className = "game-card";
+          card.style.setProperty("--tile", palette[(index + game.file.length) % palette.length]);
+          const art = document.createElement("div");
+          art.className = "card-art";
+          const number = document.createElement("span");
+          number.className = "art-number";
+          number.textContent = versionFor(game.file).replace("Client build", "CX").replace("Minecraft", "MC");
+          const stamp = document.createElement("span");
+          stamp.className = "art-stamp";
+          stamp.textContent = game.source === "folder" ? "YOUR LIBRARY" : "LOCAL BUILD";
+          art.append(number, stamp);
+          const body = document.createElement("div");
+          body.className = "card-body";
+          const kicker = document.createElement("div");
+          kicker.className = "card-kicker";
+          const kind = document.createElement("span");
+          kind.textContent = categoryLabel;
+          const version = document.createElement("span");
+          version.textContent = versionFor(game.file);
+          kicker.append(kind, version);
+          const heading = document.createElement("h2");
+          heading.className = "card-title";
+          heading.textContent = title;
+          heading.title = game.file;
+          const bottom = document.createElement("div");
+          bottom.className = "card-bottom";
+          const offline = document.createElement("span");
+          offline.className = "offline-label";
+          offline.textContent = "Ready to play";
+          const play = document.createElement("button");
+          play.className = "play-btn";
+          play.type = "button";
+          play.textContent = "Play  ↗";
+          play.setAttribute("aria-label", `Play ${title}`);
+          play.addEventListener("click", () => openGame(game));
+          bottom.append(offline, play);
+          body.append(kicker, heading, bottom);
+          card.append(art, body);
+          grid.append(card);
+        });
+      }
+
+      function openGame(game) {
+        currentGame = game;
+        document.querySelector("#viewer-name").textContent = titleFromFile(game.file);
+        frame.src = new URL(game.file, location.href).href;
+        viewer.classList.add("open");
+        document.body.style.overflow = "hidden";
+        document.querySelector("#close").focus();
+      }
+
+      function closeGame() {
+        viewer.classList.remove("open");
+        document.body.style.overflow = "";
+        frame.removeAttribute("src");
+        currentGame = null;
+      }
+
+      function dbRequest(mode, operation) {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(indexedDbName, 1);
+          request.onupgradeneeded = () => request.result.createObjectStore("settings");
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const db = request.result;
+            const tx = db.transaction("settings", mode);
+            const result = operation(tx.objectStore("settings"));
+            tx.oncomplete = () => { db.close(); resolve(result?.result); };
+            tx.onerror = () => { db.close(); reject(tx.error); };
+          };
+        });
+      }
+
+      async function saveFolder(handle) {
+        try { await dbRequest("readwrite", (store) => store.put(handle, "folder")); }
+        catch { /* Folder scanning still works for this visit if storage is unavailable. */ }
+      }
+
+      async function restoreFolder() {
+        if (!("showDirectoryPicker" in window) || !window.indexedDB) return;
+        try {
+          const handle = await dbRequest("readonly", (store) => store.get("folder"));
+          if (!handle) return;
+          folderHandle = handle;
+          if (await handle.queryPermission({ mode: "read" }) === "granted") await scanFolder(handle, false);
+          else status.textContent = "Your game folder is remembered. Scan it to refresh the library.";
+        } catch { /* Browsers without usable folder storage keep the starter library. */ }
+      }
+
+      async function scanFolder(handle, announce = true) {
+        scanButton.disabled = true;
+        scanButton.querySelector("span").textContent = "Scanning...";
+        try {
+          const found = [];
+          for await (const [file, entry] of handle.entries()) {
+            if (entry.kind === "file" && /\.html?$/i.test(file) && file.toLowerCase() !== "index.html") found.push({ file, source: "folder" });
+          }
+          folderHandle = handle;
+          await saveFolder(handle);
+          games = found.sort((left, right) => left.file.localeCompare(right.file, undefined, { sensitivity: "base" }));
+          status.textContent = announce ? `${games.length} game ${games.length === 1 ? "file" : "files"} found in “${handle.name}”.` : "";
+          render();
+        } catch (error) {
+          status.textContent = error.name === "NotAllowedError" ? "Folder access was not granted. Choose the folder again to scan it." : "Could not read that folder. Choose the folder containing your game files.";
+        } finally {
+          scanButton.disabled = false;
+          scanButton.querySelector("span").textContent = "Scan folder";
+        }
+      }
+
+      scanButton.addEventListener("click", async () => {
+        if (!("showDirectoryPicker" in window)) {
+          status.textContent = "Folder scanning needs a Chromium-based browser. The listed games can still be opened here.";
+          return;
+        }
+        try {
+          const handle = await window.showDirectoryPicker({ mode: "read" });
+          const permission = await handle.requestPermission({ mode: "read" });
+          if (permission !== "granted") {
+            status.textContent = "Folder access was not granted. The current game list is unchanged.";
+            return;
+          }
+          await scanFolder(handle);
+        } catch (error) {
+          if (error.name !== "AbortError") status.textContent = "Could not open that folder. Try choosing it again.";
+        }
+      });
+      search.addEventListener("input", render);
+      document.querySelector("#filters").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-filter]");
+        if (!button) return;
+        activeFilter = button.dataset.filter;
+        document.querySelectorAll(".filter").forEach((filter) => filter.setAttribute("aria-pressed", String(filter === button)));
+        render();
+      });
+      document.querySelector("#close").addEventListener("click", closeGame);
+      document.querySelector("#fullscreen").addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else viewer.requestFullscreen?.();
+      });
+      document.querySelector("#new-tab").addEventListener("click", () => {
+        if (!currentGame) return;
+        const launchUrl = new URL(location.href);
+        launchUrl.search = "";
+        launchUrl.hash = "";
+        launchUrl.searchParams.set("play", currentGame.file);
+        const newTab = window.open(launchUrl.href, "_blank");
+        if (newTab) {
+          newTab.opener = null;
+          closeGame();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && viewer.classList.contains("open") && !document.fullscreenElement) closeGame();
+      });
+
+      render();
+      restoreFolder();
+      const startupFile = new URLSearchParams(location.search).get("play");
+      if (startupFile && /^[^/\\]+\.html?$/i.test(startupFile)) {
+        openGame({ file: startupFile, source: "starter" });
+      }
+    })();
+  </script>
+</body>
+</html>
